@@ -12,18 +12,155 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model User {
-  id    Int     @default(autoincrement()) @id
-  email String  @unique
-  name  String?
-  books Book[]
+  id              Int          @id @default(autoincrement())
+  name            String       // User's name
+  email           String       @unique // User's email
+  password        String       // Hashed password
+  books           Book[]       // Books uploaded by user
+  createdViews    View[]       // Views created by this user
+  createdSections Section[]    // Sections created by this user
+  viewAccess      ViewViewer[] // Views this user has access to (via ViewViewer)
+  createdNotes    Note[]
+  createdComments Comment[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  resetToken       String?     // Optional reset token for password recovery
+  resetTokenExpiry DateTime?   // Expiration time for the reset token
 }
 
+
 model Book {
-  id        Int      @default(autoincrement()) @id
-  title     String
-  content   String?
-  published Boolean? @default(false)
-  author    User?    @relation(fields: [authorId], references: [id])
-  authorId  Int?
+  id               Int       @id @default(autoincrement())
+  uploadedByUserId Int
+  title            String    @db.VarChar(255)
+  author           String?   @db.VarChar(255) // Optional field for the author
+  genre            String?   @db.VarChar(100) // Optional field for the genre
+  pdfUrl           String    @db.Text         // URL or path to the PDF file
+  totalPages       Int
+  metadata         Json?                      // Optional JSON field for dynamic metadata
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+  sections         Section[]                  // One-to-many relationship with Section
+
+  // Relations
+  uploadedBy User @relation(fields: [uploadedByUserId], references: [id], onDelete: Cascade)
+}
+
+
+enum SectionType {
+  CHAPTER      // For chapters in the book
+  SECTION      // For sections within chapters
+  CUSTOM_RANGE // For user-defined custom ranges
+}
+
+model Section {
+  id              String       @id @default(cuid()) // Unique identifier for the section
+  title           String       // Section title
+  type            SectionType  // Type of section
+  bookId          Int          // Foreign key to associate with a Book
+  description     String?
+
+  parentSectionId String?      // Self-referential foreign key for hierarchical structure
+
+  startPage       Int          // Start page of the section
+  endPage         Int          // End page of the section
+  startOffset     Float?       // Optional start offset within the start page (percentage or coordinate-based)
+  endOffset       Float?       // Optional end offset within the end page (percentage or coordinate-based)
+  notes           Note[]       // Notes associated with this section
+  comments        Comment[]    // Comments for this section
+  createdAt       DateTime     @default(now()) // Timestamp for when the section was created
+  updatedAt       DateTime     @updatedAt // Automatically updated timestamp
+  deletedAt        DateTime?
+  viewSections    ViewSection[]   // Links to Views
+  createdByUserId Int
+
+  // Relations
+  book             Book        @relation(fields: [bookId], references: [id])
+  parentSection    Section?    @relation("SectionParent", fields: [parentSectionId], references: [id])
+  childrenSections Section[]   @relation("SectionParent") // All child sections
+  createdBy        User        @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+}
+
+model View {
+  id           Int            @id @default(autoincrement())
+  name         String         // Name of the View
+  description  String?
+  createdByuserId       Int            // Creator of the View
+  createdByuser         User           @relation(fields: [createdByuserId], references: [id])
+  bookType     BookType       // SINGLE or MULTIPLE to indicate the scope of books
+  accessType   AccessType     // PRIVATE, SHARED, or PUBLIC for access control
+  sharedLinkToken String?     // For managing public link sharing for PUBLIC access type
+  viewers      ViewViewer[]   // Users with shared access (optional)
+  viewSections ViewSection[]  // Sections linked to this View
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  deletedAt    DateTime?
+}
+
+model ViewSection {
+  id          Int      @id @default(autoincrement())
+  viewId      Int      // Reference to the View
+  view        View     @relation(fields: [viewId], references: [id])
+  sectionId   String      // Reference to the Section
+  section     Section  @relation(fields: [sectionId], references: [id])
+  orderIndex  Int      // Order of the section in this View
+  hidden      Boolean  @default(false) // Hide from View
+  createdAt   DateTime @default(now())
+}
+
+enum BookType {
+  SINGLE    // View applies to a single book
+  MULTIPLE  // View applies to multiple books (like a playlist)
+}
+
+enum AccessType {
+  PRIVATE   // Only the owner can access
+  SHARED    // Specific users added to viewers
+  PUBLIC    // Anyone with the link can access
+}
+
+model ViewViewer {
+  id        Int       @id @default(autoincrement())
+  viewId    Int       // Reference to the View
+  view      View      @relation(fields: [viewId], references: [id])
+  userId    Int       // User who has access to this View
+  user      User      @relation(fields: [userId], references: [id])
+  role      ViewerRole // Role or access type for this user
+  lastAccessedAt DateTime? 
+  createdAt DateTime  @default(now())
+}
+
+enum ViewerRole {
+  READ_ONLY  // Can only view the View and its Sections
+  EDIT       // Can modify the View (e.g., add/remove sections, change order)
+  ADMIN      // Full control (e.g., can change access settings, delete the View)
+}
+
+
+
+model Note {
+  id        String   @id @default(cuid()) // Unique identifier for the note
+  content   String   // Note content
+  sectionId String   // Foreign key to associate with a Section
+  createdAt DateTime @default(now()) // Timestamp for when the note was created
+  createdByUserId Int
+  createByUser   User @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  // Relations
+  section   Section  @relation(fields: [sectionId], references: [id])
+}
+
+model Comment {
+  id        String   @id @default(cuid()) // Unique identifier for the comment
+  content   String   // Comment content
+  sectionId String   // Foreign key to associate with a Section
+  createdAt DateTime @default(now()) // Timestamp for when the comment was created
+  createdByUserId Int
+  createByUser   User @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  // Relations
+  section   Section  @relation(fields: [sectionId], references: [id])
 }

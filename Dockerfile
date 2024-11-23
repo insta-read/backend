@@ -4,31 +4,33 @@
 ARG NODE_VERSION=20-alpine
 FROM node:${NODE_VERSION} AS base
 
-# Set the working directory and install global dependencies.
+# Set the working directory.
 WORKDIR /usr/src/app
 
 # Copy only package.json and lock file to leverage Docker caching.
 COPY package*.json ./
 
-# Install pnpm globally for dependency management (optional, can also use npm).
-RUN npm install -g pnpm@9.10.0
+# Install npm globally (optional, npm comes pre-installed with Node.js, but you can update it if needed).
+RUN npm install -g npm@latest
 
-# Install only production dependencies in this layer to use caching.
-RUN pnpm install --prod
+# Install dotenv-cli globally (required to load .env files in production).
+RUN npm install -g dotenv-cli
 
-# Use a separate layer to install development dependencies for building.
+# Install only production dependencies to optimize image size.
+RUN npm install --prod
+
+# ---- Builder Stage ----
 FROM base AS builder
 
 # Install dev dependencies needed for building the application.
 COPY --chown=node:node . . 
-RUN pnpm install --frozen-lockfile
+RUN npm install --frozen-lockfile
 
 # Run the NestJS build process.
-RUN pnpm run build
+RUN npm run build
 
 # ---- Production Stage ----
-# Use a new node base image for the final, minimal production image.
-FROM node:${NODE_VERSION} AS production
+FROM node:${NODE_VERSION} AS prod
 
 # Set working directory in the final image.
 WORKDIR /usr/src/app
@@ -41,10 +43,10 @@ COPY --from=builder /usr/src/app/dist ./dist
 COPY package.json ./
 
 # Set environment variables.
-ENV NODE_ENV=production
+ENV NODE_ENV=prod
 
 # Expose the application port.
 EXPOSE 3000
 
-# Run the application with minimal logging.
+# Use dotenv-cli to run the application
 CMD ["node", "dist/main"]

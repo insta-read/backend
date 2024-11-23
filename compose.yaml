@@ -9,16 +9,17 @@ services:
         ports:
             - '3000:3000'
         env_file:
-            - env/.env
-            - env/.env.${NODE_ENV}
+            - ./env/.env
+            - ./env/.env.${NODE_ENV}
         environment:
-            NODE_ENV: ${NODE_ENV:-development}
+            NODE_ENV: ${NODE_ENV:-dev}
         depends_on:
             postgres:
                 condition: service_healthy
         volumes:
             - ./:/usr/src/app
-            - /usr/src/app/node_modules 
+            - /usr/src/app/node_modules
+
         command: >
             sh -c "
               npx prisma migrate deploy &&

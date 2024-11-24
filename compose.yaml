@@ -2,29 +2,29 @@ version: '3.8'
 
 services:
     # NestJS API service
-    api:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        ports:
-            - '3000:3000'
-        env_file:
-            - ./env/.env
-            - ./env/.env.${NODE_ENV}
-        environment:
-            NODE_ENV: ${NODE_ENV:-dev}
-        depends_on:
-            postgres:
-                condition: service_healthy
-        volumes:
-            - ./:/usr/src/app
-            - /usr/src/app/node_modules
+    # api:
+    #     build:
+    #         context: .
+    #         dockerfile: Dockerfile
+    #     ports:
+    #         - '3000:3000'
+    #     env_file:
+    #         - ./env/.env
+    #         - ./env/.env.${NODE_ENV}
+    #     environment:
+    #         NODE_ENV: ${NODE_ENV:-dev}
+    #     depends_on:
+    #         postgres:
+    #             condition: service_healthy
+    #     volumes:
+    #         - ./:/usr/src/app
+    #         - /usr/src/app/node_modules
 
-        command: >
-            sh -c "
-              npx prisma migrate deploy &&
-              npm run start:${NODE_ENV}
-            "
+    #     command: >
+    #         sh -c "
+    #           npx prisma migrate deploy &&
+    #           npm run start:${NODE_ENV}
+    #         "
 
     # PostgreSQL service
     postgres:
@@ -34,7 +34,7 @@ services:
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
             POSTGRES_DB: ${POSTGRES_DB}
         ports:
-            - '5432:5432'
+            - '2010:5432'
         volumes:
             - postgres_data:/var/lib/postgresql/data
         healthcheck:

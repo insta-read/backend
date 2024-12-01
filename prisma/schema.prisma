@@ -15,7 +15,8 @@ datasource db {
 
 model User {
   id              Int          @id @default(autoincrement())
-  name            String       // User's name
+  firstname       String       // User's name
+  lastname        String       // User's name
   email           String       @unique // User's email
   password        String       // Hashed password
   books           Book[]       // Books uploaded by user

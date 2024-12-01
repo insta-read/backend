@@ -1,10 +1,13 @@
 import { NestFactory } from '@nestjs/core';
+import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     app.enableCors();
+
+  app.use(cookieParser());
 
     const config = new DocumentBuilder()
         .setTitle('InstaRead Backend')

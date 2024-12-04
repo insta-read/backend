@@ -8,7 +8,11 @@ import { AccessTokenPayload } from 'src/types/auth/AccessTokenPayload';
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(private readonly configService: ConfigService) {
         super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            jwtFromRequest: ExtractJwt.fromExtractors([
+                (request) => {
+                  return request?.cookies?.access_token;
+                },
+              ]),
             ignoreExpiration: false,
             secretOrKey: configService.get('JWT_SECRET'),
         });

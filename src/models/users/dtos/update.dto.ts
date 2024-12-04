@@ -4,4 +4,5 @@ import { User } from '@prisma/client';
 
 export class UpdateUser extends PartialType(CreateUser) {
     id: User['id'];
+    resetToken?: string;
 }

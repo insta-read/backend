@@ -18,7 +18,6 @@ export class UsersController {
     @ApiCreatedResponse({ type: UserEntity })
     @Post()
     create(@Body() createUserDto: CreateUser) {
-     
         return this.prisma.user.create({ data: createUserDto });
     }
 
@@ -41,10 +40,7 @@ export class UsersController {
     @ApiOkResponse({ type: UserEntity })
     @ApiBearerAuth()
     @Patch(':id')
-    async update(
-        @Param('id') id: number,
-        @Body() updateUserDto: UpdateUser,
-    ) {
+    async update(@Param('id') id: number, @Body() updateUserDto: UpdateUser) {
         const user = await this.prisma.user.findUnique({ where: { id } });
         return this.prisma.user.update({
             where: { id },

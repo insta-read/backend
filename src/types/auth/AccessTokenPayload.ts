@@ -1,6 +1,4 @@
-
-
 export type AccessTokenPayload = {
-  userId: number;
-  email: string;
+    userId: number;
+    email: string;
 };

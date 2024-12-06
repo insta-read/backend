@@ -18,8 +18,8 @@ export class AuthService {
 
     generateAccessToken(payload: any): string {
         return this.jwtService.sign(payload, { secret: process.env.ACCESS_TOKEN_SECRET });
-      }
-    
+    }
+
     generateRefreshToken(payload: any): string {
         return this.jwtService.sign(payload, { secret: process.env.REFRESH_TOKEN_SECRET });
     }
@@ -27,15 +27,14 @@ export class AuthService {
     async saveRefreshToken(userId: number, token: string): Promise<void> {
         // Save the hashed token in the database
         const hashedToken = await bcrypt.hash(token, 10);
-        await this.userService.update(userId, {id: userId, resetToken: hashedToken });
+        await this.userService.update(userId, { id: userId, resetToken: hashedToken });
     }
-    
+
     async validateRefreshToken(userId: number, token: string): Promise<boolean> {
         const user = await this.userService.findOneById(userId);
         if (!user || !user.resetToken) return false;
         return bcrypt.compare(token, user.resetToken);
     }
-
 
     async validateUser(email: string, password: string): Promise<UserEntity> {
         const user: UserEntity = await this.userService.findOneByEmail(email);
@@ -50,31 +49,34 @@ export class AuthService {
     }
 
     async login(model: LoginRequestDto): Promise<AccessToken> {
-        const user = await this.userService.findOneByEmail(model.email)
-        if(!user) {
-            throw new NotFoundException(`user not found`)
+        const user = await this.userService.findOneByEmail(model.email);
+        if (!user) {
+            throw new NotFoundException(`user not found`);
         }
         const accessToken = this.generateAccessToken({ userId: user.id, email: user.email });
         const refreshToken = this.generateRefreshToken({ userId: user.id, email: user.email });
 
         await this.saveRefreshToken(user.id, refreshToken);
-    
+
         return { access_token: accessToken, refresh_token: refreshToken };
     }
-    async register(user: RegisterRequestDto): Promise<void> { 
+    async register(user: RegisterRequestDto): Promise<void> {
         const existingUser = await this.userService.findOneByEmail(user.email);
         if (existingUser) {
             throw new BadRequestException('Email already exists');
         }
         const hashedPassword: string = await bcrypt.hash(user.password, 10);
-        const newUser: UserEntity = await this.userService.create({ ...user, password: hashedPassword });
+        const newUser: UserEntity = await this.userService.create({
+            ...user,
+            password: hashedPassword,
+        });
     }
 
-    async logout (payload: any) {
+    async logout(payload: any) {
         const user = await this.userService.findOneById(payload.id);
         if (!user) {
-            throw new NotFoundException(`user not found`)
+            throw new NotFoundException(`user not found`);
         }
-        await this.userService.update(user.id, {id: user.id, resetToken: null });
+        await this.userService.update(user.id, { id: user.id, resetToken: null });
     }
 }

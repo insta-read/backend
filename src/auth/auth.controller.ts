@@ -34,18 +34,23 @@ export class AuthController {
         @Body() loginBody: LoginRequestDto,
     ): Promise<void> {
         const { access_token, refresh_token } = await this.authService.login(loginBody);
+        const maxAge = parseInt(this.configService.get('JWT_EXPIRES_IN'));
         response.cookie('access_token', access_token, {
             httpOnly: true, // Prevents client-side JavaScript access
             secure: process.env.NODE_ENV === 'production', // Ensures the cookie is sent over HTTPS in production
             // sameSite: 'strict', // Prevents cross-site request forgery (CSRF)
-            maxAge: this.configService.get('JWT_EXPIRES_IN') ?? 3600 * 1000, // Optional: Cookie expiration in milliseconds
+            maxAge: maxAge && !isNaN(maxAge) ? maxAge : 3600 * 1000, // Optional: Cookie expiration in milliseconds
         });
 
+        const refresh_token_age = parseInt(this.configService.get('REFRESH_JWT_EXPIRES_IN'));
         response.cookie('refresh_token', access_token, {
             httpOnly: true, // Prevents client-side JavaScript access
             secure: process.env.NODE_ENV === 'production', // Ensures the cookie is sent over HTTPS in production
             // sameSite: 'strict', // Prevents cross-site request forgery (CSRF)
-            maxAge: this.configService.get('REFRESH_JWT_EXPIRES_IN') ?? 7 * 24 * 60 * 60 * 1000, // 7 days
+            maxAge:
+                refresh_token_age && !isNaN(refresh_token_age)
+                    ? refresh_token_age
+                    : 7 * 24 * 60 * 60 * 1000, // 7 days
         });
     }
 
@@ -92,10 +97,12 @@ export class AuthController {
                 username: payload.username,
             });
 
-            res.cookie('jwt', newAccessToken, {
-                httpOnly: true,
-                secure: true,
-                maxAge: this.configService.get('JWT_EXPIRES_IN') ?? 3600 * 1000, // Optional: Cookie expiration in milliseconds
+            const maxAge = parseInt(this.configService.get('JWT_EXPIRES_IN'));
+            res.cookie('access_token', newAccessToken, {
+                httpOnly: true, // Prevents client-side JavaScript access
+                secure: process.env.NODE_ENV === 'production', // Ensures the cookie is sent over HTTPS in production
+                // sameSite: 'strict', // Prevents cross-site request forgery (CSRF)
+                maxAge: maxAge && !isNaN(maxAge) ? maxAge : 3600 * 1000, // Optional: Cookie expiration in milliseconds
             });
 
             res.send({ message: 'Access token refreshed' });

@@ -7,12 +7,12 @@ import { BookEntity } from '../entity/book.entity';
 export class BooksService {
     constructor(private readonly prisma: PrismaService) {}
 
-    uploadBook(uploadBook: BookUploadDto): Promise<BookEntity>  {
-        const book: BookEntity = this.prisma.book.create({ data : uploadBook}) as any
-        return Promise.resolve(book);
+    uploadBook(uploadBook: BookUploadDto) {
+        // const book: BookEntity = this.prisma.book.create({ data : uploadBook}) as any
+        // return Promise.resolve(book);
     }
 
     findBookById(id: number) {
-        return this.prisma.book.findUnique({ where: { id } });
+        // return this.prisma.book.findUnique({ where: { id } });
     }
 }

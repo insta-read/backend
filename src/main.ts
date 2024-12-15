@@ -5,7 +5,14 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
-    app.enableCors();
+
+    // Enable CORS with default or custom configuration
+    app.enableCors({
+        origin: ['http://localhost:4200', '*'], // Allow specific origins
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Specify allowed methods
+        allowedHeaders: 'Content-Type, Authorization', // Specify allowed headers
+        credentials: true, // Allow cookies from CORS requests
+    });
 
     app.use(cookieParser());
 
